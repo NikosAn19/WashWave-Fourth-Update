@@ -11,36 +11,50 @@ import {
   Alert,
 } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { useIP } from "@/context/IPContext";
+
+// 📍 Debug: Όταν φορτώνεται το component
+console.log("📥 LoginScreen component loaded");
 
 const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const { login } = useAuth();
+  const { ip, loading } = useIP();
 
+  // Handler για το login
   const handleLogin = async (): Promise<void> => {
     const payload = { email, password };
+
+    console.log("🔐 Υποβλήθηκε login με email:", email);
+
     try {
-      const response = await fetch("http://10.10.20.202:5000/api/auth/login", {
+      const response = await fetch(`http://${ip}:5000/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       const data = await response.json();
+      console.log("📨 Απάντηση από το backend:", data);
+
       if (response.ok) {
-        console.log("Log in in component");
-        login(data.user);
-        Alert.alert("Επιτυχία", data.message || "Login successful.", [
+        login(data.user); // Ενημέρωση context με τα δεδομένα του χρήστη
+        console.log("✅ Επιτυχής σύνδεση, προώθηση στο /menu");
+
+        Alert.alert("Επιτυχία", data.message || "Επιτυχής σύνδεση!", [
           {
             text: "OK",
             onPress: () => router.push("/menu" as RelativePathString),
           },
         ]);
       } else {
-        Alert.alert("Σφάλμα", data.message || "Invalid credentials.");
+        console.warn("❌ Ανεπιτυχής σύνδεση:", data.message);
+        Alert.alert("Σφάλμα", data.message || "Λανθασμένα στοιχεία σύνδεσης.");
       }
     } catch (error) {
-      console.error("Login error:", error);
-      Alert.alert("Σφάλμα", "An error occurred during login.");
+      console.error("❗ Σφάλμα κατά τη σύνδεση:", error);
+      Alert.alert("Σφάλμα", "Παρουσιάστηκε πρόβλημα κατά τη σύνδεση.");
     }
   };
 
@@ -52,24 +66,31 @@ const LoginScreen: React.FC = () => {
     >
       <View style={styles.form}>
         <Text style={styles.title}>Σύνδεση</Text>
+
         <TextInput
           style={styles.input}
           placeholder="Email"
           placeholderTextColor="#aaa"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => {
+            setEmail(text);
+          }}
           keyboardType="email-address"
           autoCapitalize="none"
         />
+
         <TextInput
           style={styles.input}
           placeholder="Password"
           placeholderTextColor="#aaa"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => {
+            setPassword(text);
+          }}
           secureTextEntry
           autoCapitalize="none"
         />
+
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Σύνδεση</Text>
         </TouchableOpacity>

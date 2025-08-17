@@ -1,0 +1,51 @@
+{
+  "ip": "192.168.1.39",
+  "method": "ipconfig",
+  "timestamp": "2025-06-24T17:33:50.456Z",
+  "interfaces": [
+    [
+      "Wi-Fi",
+      [
+        {
+          "address": "fe80::f800:1817:63e9:d6c1",
+          "netmask": "ffff:ffff:ffff:ffff::",
+          "family": "IPv6",
+          "mac": "2c:9c:58:b5:6a:d7",
+          "internal": false,
+          "cidr": "fe80::f800:1817:63e9:d6c1/64",
+          "scopeid": 10
+        },
+        {
+          "address": "192.168.1.39",
+          "netmask": "255.255.255.0",
+          "family": "IPv4",
+          "mac": "2c:9c:58:b5:6a:d7",
+          "internal": false,
+          "cidr": "192.168.1.39/24"
+        }
+      ]
+    ],
+    [
+      "Loopback Pseudo-Interface 1",
+      [
+        {
+          "address": "::1",
+          "netmask": "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+          "family": "IPv6",
+          "mac": "00:00:00:00:00:00",
+          "internal": true,
+          "cidr": "::1/128",
+          "scopeid": 0
+        },
+        {
+          "address": "127.0.0.1",
+          "netmask": "255.0.0.0",
+          "family": "IPv4",
+          "mac": "00:00:00:00:00:00",
+          "internal": true,
+          "cidr": "127.0.0.1/8"
+        }
+      ]
+    ]
+  ]
+}

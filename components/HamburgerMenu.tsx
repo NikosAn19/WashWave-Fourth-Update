@@ -16,6 +16,9 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const PANEL_WIDTH = 250;
 
+
+console.log("🍔 HamburgerMenu loaded");
+
 const HamburgerMenu: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();

@@ -6,15 +6,20 @@ import { useAuth } from "@/context/AuthContext";
 import RegisterModal from "./RegisterModal";
 import LoginModal from "./LoginModal";
 import { RelativePathString, useRouter } from "expo-router";
+import { useIP } from "@/context/IPContext";
+
+
+console.log("📋 SummaryComponent loaded");
 
 type SummaryProps = {
-  vehicle: { label: string };
+  vehicle: string | null;
   service: { service_id: string; title: string; price: string };
   address: string;
   schedule: { date: string; time: string };
   carWash: { _id: string } | null;
   autoSaveOnMount?: boolean;
 };
+
 
 const SummaryComponent: React.FC<SummaryProps> = ({
   vehicle,
@@ -28,7 +33,19 @@ const SummaryComponent: React.FC<SummaryProps> = ({
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [reservationDone, setReservationDone] = useState(false);
 
+  const formatDateGreek = (dateString: string) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("el-GR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+};
+
+
   const router = useRouter();
+  const { ip } = useIP();
 
   // μόλις reservationDone γίνει true, αποθηκεύουμε στη βάση
   useEffect(() => {
@@ -39,12 +56,12 @@ const SummaryComponent: React.FC<SummaryProps> = ({
 
     const saveReservation = async () => {
       try {
-        const res = await fetch("http://10.10.20.47:5000/api/history", {
+        const res = await fetch(`http://${ip}:5000/api/history`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             user_email: user.email,
-            vehicle_type: vehicle.label,
+            vehicle_type: vehicle,
             service_id: service.service_id,
             car_wash_id: carWash?._id,
             reserved_at: `${schedule.date}T${schedule.time}:00`,
@@ -73,7 +90,7 @@ const SummaryComponent: React.FC<SummaryProps> = ({
 
         <View style={styles.summaryItem}>
           <Text style={styles.itemTitle}>Τύπος Οχήματος</Text>
-          <Text style={styles.itemValue}>{vehicle.label}</Text>
+          <Text style={styles.itemValue}>{vehicle}</Text>
         </View>
 
         <View style={styles.summaryItem}>
@@ -86,14 +103,15 @@ const SummaryComponent: React.FC<SummaryProps> = ({
           <Text style={styles.itemCost}>{service.price} €</Text>
         </View>
 
-        <View style={styles.summaryItem}>
-          <Text style={styles.itemTitle}>Διεύθυνση & Ώρα</Text>
-          <Text style={styles.itemValue}>
-            {address}
-            {"\n"}
-            {schedule.date} - {schedule.time}
-          </Text>
-        </View>
+       <View style={styles.summaryItem}>
+        <Text style={styles.itemTitle}>Διεύθυνση & Ώρα</Text>
+        <Text style={styles.itemValue}>
+       {address}
+       {"\n"}
+       {formatDateGreek(schedule.date)} - {schedule.time}
+  </Text>
+</View>
+
       </View>
 
       {isLoggedIn && !reservationDone && (

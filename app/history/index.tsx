@@ -1,8 +1,16 @@
-// app/BookingHistoryScreen.tsx
+// BookingHistoryScreen.tsx
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { useIP } from "@/context/IPContext";
 
+// Ορισμός τύπου για κάθε κράτηση
 interface Reservation {
   reservation_id: string;
   reserved_at: string;
@@ -15,35 +23,37 @@ interface Reservation {
 }
 
 const BookingHistoryScreen: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useAuth(); // Ανάκτηση στοιχείων χρήστη
+  const { ip } = useIP(); // Απόκτηση IP backend από context
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    if (!user?.email) {
-      setLoading(false);
-      return;
-    }
+    // Αν δεν έχει γίνει login ή δεν υπάρχει email, δεν κάνουμε fetch
+    if (!user?.email) return;
 
     const fetchHistory = async () => {
       try {
+        console.log("📡 Αίτημα για ιστορικό κρατήσεων με email:", user.email);
+
         const res = await fetch(
-          `http://10.10.20.47:5000/api/history?email=${encodeURIComponent(
-            user.email
-          )}`
+          `http://${ip}:5000/api/history?email=${encodeURIComponent(user.email)}`
         );
-        if (!res.ok) throw new Error("Network response was not ok");
+
+        if (!res.ok) throw new Error(`Server returned status: ${res.status}`);
         const data: Reservation[] = await res.json();
+
+        console.log("✅ Ελήφθησαν κρατήσεις:", data.length);
         setReservations(data);
       } catch (err) {
-        console.error("Error fetching booking history:", err);
+        console.error("❗ Σφάλμα κατά την ανάκτηση ιστορικού:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchHistory();
-  }, [user]);
+  }, [user, ip]);
 
   if (loading) {
     return (
@@ -62,7 +72,7 @@ const BookingHistoryScreen: React.FC = () => {
       ) : (
         reservations.map((r) => (
           <View key={r.reservation_id} style={styles.card}>
-            <Text style={styles.cardItemTitle}>Ημερομηνία &amp; Ώρα Κράτησης</Text>
+            <Text style={styles.cardItemTitle}>Ημερομηνία & Ώρα Κράτησης</Text>
             <Text style={styles.cardItemValue}>
               {new Date(r.reserved_at).toLocaleString()}
             </Text>
@@ -85,6 +95,7 @@ const BookingHistoryScreen: React.FC = () => {
   );
 };
 
+// Στυλ για την εμφάνιση του ιστορικού
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
@@ -133,4 +144,3 @@ const styles = StyleSheet.create({
 });
 
 export default BookingHistoryScreen;
-

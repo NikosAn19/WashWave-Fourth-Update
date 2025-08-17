@@ -12,6 +12,7 @@ import {
   Modal,
 } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { useIP } from "@/context/IPContext";
 
 interface LoginModalProps {
   visible: boolean;
@@ -19,23 +20,31 @@ interface LoginModalProps {
   onSuccess: () => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, onSuccess }) => {
+
+console.log("👤 LoginModal loaded");
+
+const LoginModal: React.FC<LoginModalProps> = ({
+  visible,
+  onClose,
+  onSuccess,
+}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useAuth();
+  const { ip } = useIP();
 
   const handleLogin = async () => {
     try {
-      const response = await fetch("http://10.10.20.47:5000/api/auth/login", {
+      const response = await fetch(`http://${ip}:5000/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
       const data = await response.json();
       if (response.ok) {
-        login(data.user);             // ενημερώνουμε το context
-        onSuccess();         // ειδοποιούμε το parent ότι το login πέτυχε
-        setEmail("");        // καθαρίζουμε
+        login(data.user); // ενημερώνουμε το context
+        onSuccess(); // ειδοποιούμε το parent ότι το login πέτυχε
+        setEmail(""); // καθαρίζουμε
         setPassword("");
       } else {
         Alert.alert("Σφάλμα", data.message || "Invalid credentials.");
@@ -74,7 +83,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ visible, onClose, onSuccess }) 
             <TouchableOpacity style={styles.button} onPress={handleLogin}>
               <Text style={styles.buttonText}>Σύνδεση</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.cancel]} onPress={onClose}>
+            <TouchableOpacity
+              style={[styles.button, styles.cancel]}
+              onPress={onClose}
+            >
               <Text style={[styles.buttonText, styles.cancelText]}>Άκυρο</Text>
             </TouchableOpacity>
           </View>

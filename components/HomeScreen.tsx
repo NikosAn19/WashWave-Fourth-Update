@@ -1,7 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
-import logoIcon from "@/assets/images/wash_wave_home.png";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -9,64 +8,63 @@ import {
 import { RelativePathString, useRouter } from "expo-router";
 
 const HomeScreen: React.FC = () => {
-  //Να μην καλυπτει την πανω μπαρα στα κινητα
   const insets = useSafeAreaInsets();
   const router = useRouter();
+
+  console.log("🏠 HomeScreen loaded");
+
+
   return (
     <SafeAreaView style={[styles.safeContainer, { paddingTop: insets.top }]}>
       <View style={styles.container}>
-        {/* Header με το logo */}
-        <View style={styles.header}>
-          <Image
-            source={logoIcon} // Αντικατέστησε με το path του logo σου
-            style={styles.logo}
-            resizeMode="cover"
-          />
+        {/* Κείμενο καλωσορίσματος */}
+        <View>
+          <View style={styles.welcomeContainer}>
+            <Text style={styles.welcomeText}>
+              Καλώς ήρθες στο {""}
+              <Text>
+                <Text style={styles.waveText}>Wash</Text>{" "}
+                <Text style={styles.washText}>Wave 🌊 </Text>
+              </Text>{" "} {"\n"}
+              Η νέα εποχή στον καθαρισμό του οχήματος σου είναι εδώ! {"\n"}
+              Είσαι έτοιμος να ξεκινήσεις;
+            </Text>
+          </View>
+
+          {/* Κάρτες */}
+          <View style={styles.cardContainer}>
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => router.push("/login" as RelativePathString)}
+            >
+              <View style={styles.cardContent}>
+                <FontAwesome name="sign-in" size={40} color="#00ADFE" style={styles.icon} />
+                <Text style={styles.cardText}>
+                  Έχω λογαριασμό και θέλω να συνδεθώ
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => router.push("/register" as RelativePathString)}
+            >
+              <View style={styles.cardContent}>
+                <FontAwesome name="user-plus" size={40} color="#00ADFE" style={styles.icon} />
+                <Text style={styles.cardText}>
+                  Δεν έχω λογαριασμό και θέλω να δημιουργήσω
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Κάρτες για Σύνδεση και Εγγραφή */}
-        <View style={styles.cardContainer}>
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push("/login" as RelativePathString)}
-          >
-            <View style={styles.cardContent}>
-              <FontAwesome
-                name="sign-in"
-                size={40}
-                color="#00ADFE"
-                style={styles.icon}
-              />
-              <Text style={styles.cardText}>
-                Έχω λογαριασμό και θέλω να συνδεθώ
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push("/register" as RelativePathString)}
-          >
-            <View style={styles.cardContent}>
-              <FontAwesome
-                name="user-plus"
-                size={40}
-                color="#00ADFE"
-                style={styles.icon}
-              />
-              <Text style={styles.cardText}>
-                Δεν έχω λογαριασμό και θέλω να δημιουργήσω
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Κουμπί Παραβλέψη */}
+        {/* Κουμπί Παραβλέψη στο κάτω μέρος */}
         <TouchableOpacity
           style={styles.skipContainer}
           onPress={() => router.push("/menu" as RelativePathString)}
         >
-          <Text style={styles.skipText}>Παραβλέψη</Text>
+          <Text style={styles.skipText}>Παράβλεψη</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -81,24 +79,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    justifyContent: "space-between", // ✅ Κάνει το skip να πάει κάτω
   },
-  header: {
-    height: 100,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#0000",
-    width: "100%",
+  welcomeContainer: {
+    marginTop: 20,
+    marginBottom: 0,
+    paddingHorizontal: 10,
   },
-  logo: {
-    width: "50%",
-    height: "100%",
-    borderRadius: 5,
+  welcomeText: {
+    fontSize: 17,
+    color: "#333",
+    textAlign: "center",
+    fontFamily: "System",
+    fontWeight: "400",
+    lineHeight: 26,
+  },
+  waveText: {
+    color: "#00ADFE",
+    fontWeight: "normal",
+  },
+  washText: {
+    fontWeight: "bold",
+    color: "#000",
   },
   cardContainer: {
-    flex: 1,
-    justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
   },
   card: {
     width: "90%",
@@ -108,7 +114,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 20,
     marginVertical: 15,
-    // Σκιές για Android και iOS
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -137,6 +142,7 @@ const styles = StyleSheet.create({
     color: "black",
     textDecorationLine: "underline",
   },
+  
 });
 
 export default HomeScreen;

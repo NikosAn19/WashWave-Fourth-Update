@@ -1,61 +1,32 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { View, Image, StyleSheet } from "react-native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "../types";
-import washImg from "@/assets/images/wash_wave_home.png";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-type SplashScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "Splash"
->;
+// ✅ Update with your actual image path
+import splashImage from "@/assets/images/wash_wave_home.png"; // make sure this exists
 
-type Props = {
-  navigation: SplashScreenNavigationProp;
-};
+console.log("🌊 SplashScreen loaded");
 
-const SplashScreen: React.FC<Props> = ({ navigation }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.replace("Home");
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [navigation]);
-
-  //Να μην καλυπτει την πανω μπαρα στα κινητα
-  const insets = useSafeAreaInsets();
-
+const SplashScreen = () => {
   return (
-    <SafeAreaView style={[styles.safeContainer, { paddingTop: insets.top }]}>
-      <View style={styles.container}>
-        <Image
-          source={washImg} // Τοποθέτησε την εικόνα σου στο φάκελο assets
-          style={styles.image}
-          resizeMode="cover"
-        />
-      </View>
+    <SafeAreaView style={styles.container}>
+      <Image
+        source={splashImage}
+        style={styles.image}
+        resizeMode="contain" // or "contain" if you want padding
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeContainer: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
   container: {
-    flex: 1, // Κάνει το container να καταλαμβάνει ολόκληρη την οθόνη
+    flex: 1,
   },
   image: {
-    flex: 1, // Η εικόνα καταλαμβάνει όλο τον διαθέσιμο χώρο
+    flex: 1,
     width: "100%",
     height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
   },
 });
 

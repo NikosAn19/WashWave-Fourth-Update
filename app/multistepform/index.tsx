@@ -1,4 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+
+// 1. Εισαγωγές βιβλιοθηκών και components
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -6,456 +8,304 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Dimensions,
   SafeAreaView,
 } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import MapComponent, { MarkerType } from "@/components/Map/MapComponent";
-import { useGeocodeAddresses } from "@/hooks/useGeocodeAddresses";
+
+// Εισαγωγή components και context από την εφαρμογή
+import MapComponent from "@/components/Map/MapComponent";
 import Step3Schedule from "@/components/Step3Schedule";
 import SummaryComponent from "@/components/SummaryComponent";
+import { useGeocodeAddresses } from "@/hooks/useGeocodeAddresses";
 import { useAuth } from "@/context/AuthContext";
+import { useIP } from "@/context/IPContext";
 
-// Δείγμα δεδομένων για τύπους οχημάτων
-const vehicleTypes = [
-  { id: 1, label: "Ι.Χ.", image: require("@/assets/formImages/carImg.png") },
-  {
-    id: 2,
-    label: "VAN/ΦΟΡΤΗΓΟ",
-    image: require("@/assets/formImages/vanImg.png"),
-  },
-  {
-    id: 3,
-    label: "SUV/JEEP",
-    image: require("@/assets/formImages/suvImg.jpg"),
-  },
-  { id: 4, label: "MOTO", image: require("@/assets/formImages/motoImg1.webp") },
-];
+// Debug log κατά την αρχική φόρτωση
+console.log("🧭 Multiple step form loaded");
 
-// Δείγμα δεδομένων για υπηρεσίες
-const services = [
-  {
-    id: 1,
-    price: "11.00 €*",
-    subPrice: "* Ενδεικτική τιμή",
-    title: "Πλύσιμο χέρι - Μέσα - έξω Ι.Χ.",
-    description:
-      "Πλύσιμο του οχήματος στο χέρι - Μέσα & έξω. Η τιμή ενδέχεται να είναι διαφορετική σύμφωνα με τον τιμοκατάλογο του εκάστοτε πρατηρίου της επιλογής σας.",
-  },
-  {
-    id: 2,
-    price: "8.00 €*",
-    subPrice: "* Ενδεικτική τιμή",
-    title: "Πλύσιμο χέρι - Εσωτερικό Ι.Χ.",
-    description:
-      "Εσωτερικό πλύσιμο οχήματος στο χέρι. Η τιμή ενδέχεται να είναι διαφορετική σύμφωνα με τον τιμοκατάλογο του εκάστοτε πρατηρίου της επιλογής σας.",
-  },
-  {
-    id: 3,
-    price: "8.00 €*",
-    subPrice: "* Ενδεικτική τιμή",
-    title: "Πλύσιμο χέρι - Εξωτερικό Ι.Χ.",
-    description:
-      "Εξωτερικό πλύσιμο οχήματος στο χέρι. Η τιμή ενδέχεται να είναι διαφορετική σύμφωνα με τον τιμοκατάλογο του εκάστοτε πρατηρίου της επιλογής σας.",
-  },
-  {
-    id: 4,
-    price: "12.00 €*",
-    subPrice: "* Ενδεικτική τιμή",
-    title: "Πλύσιμο βούρτσα - Μέσα - έξω Ι.Χ.",
-    description:
-      "Πλύσιμο του οχήματος με βούρτσα - Μέσα & έξω. Η τιμή ενδέχεται να είναι διαφορετική σύμφωνα με τον τιμοκατάλογο του εκάστοτε πρατηρίου της επιλογής σας.",
-  },
-  {
-    id: 5,
-    price: "8.00 €*",
-    subPrice: "* Ενδεικτική τιμή",
-    title: "Πλύσιμο βούρτσα - Εσωτερικό Ι.Χ.",
-    description:
-      "Πλύσιμο του οχήματος με βούρτσα - Μέσα. Η τιμή ενδέχεται να είναι διαφορετική σύμφωνα με τον τιμοκατάλογο του εκάστοτε πρατηρίου της επιλογής σας.",
-  },
-  {
-    id: 6,
-    price: "8.00 €*",
-    subPrice: "* Ενδεικτική τιμή",
-    title: "Πλύσιμο βούρτσα - Εξωτερικό Ι.Χ.",
-    description:
-      "Πλύσιμο του οχήματος με βούρτσα - Έξω. Η τιμή ενδέχεται να είναι διαφορετική σύμφωνα με τον τιμοκατάλογο του εκάστοτε πρατηρίου της επιλογής σας.",
-  },
-];
-
-// Ορισμός τύπου (προσαρμόζεις ό,τι άλλο επιστρέφει το API)
-type ServiceType = {
-  _id: string;
-  car_wash_id: string;
-  name: string; // ή title, ανάλογα με το πεδίο στο backend
-  description: string;
-  price: number;
-  duration: number;
-  vehicle_type: string;
+// Χάρτης εικόνων για κάθε τύπο οχήματος
+const vehicleImageMap = {
+  "Αυτοκίνητο": require("@/assets/formImages/carImg.png"),
+  "VAN": require("@/assets/formImages/vanImg.png"),
+  "SUV": require("@/assets/formImages/suvImg.jpg"),
+  "Moto": require("@/assets/formImages/motoImg.jpg"),
 };
 
-type ServiceCardProps = {
-  service: {
-    _id: string;
-    car_wash_id: string;
-    name: string;
-    description: string;
-    price: number;
-    duration: number;
-    vehicle_type: string;
-  };
-  onSelect: () => void;
-};
-type SelectedService = {
-  service_id: string;
-  car_wash_id: string;
-  title: string;
-  price: string;
-};
+// Component κάρτας υπηρεσίας
+const ServiceCard = ({ service, onSelect }) => (
+  <View style={styles.serviceCard}>
+    <Text style={styles.servicePrice}>{service.price.toFixed(2)} €</Text>
+    <Text style={styles.serviceTitle}>{service.name}</Text>
+    <Text style={styles.serviceDescription}>{service.description}</Text>
+    <TouchableOpacity style={styles.selectButton} onPress={onSelect}>
+      <Text style={styles.selectButtonText}>Επιλογή</Text>
+    </TouchableOpacity>
+  </View>
+);
 
-// Component για κάθε service card
-const ServiceCard: React.FC<ServiceCardProps> = ({ service, onSelect }) => {
-  return (
-    <View style={styles.serviceCard}>
-      {/* Εμφανίζουμε την τιμή με το € */}
-      <Text style={styles.servicePrice}>{service.price.toFixed(2)} €</Text>
+// Component κάρτας πλυντηρίου (διεύθυνση)
+const AddressCard = ({ service, onSelect }) => (
+  <View style={styles.card}>
+    <Text style={styles.title}>{service.title}</Text>
+    <Text style={styles.address}>{service.address}</Text>
+    <Text style={styles.description}>{service.description}</Text>
+    <TouchableOpacity style={styles.button} onPress={onSelect}>
+      <Text style={styles.buttonText}>Επιλογή</Text>
+    </TouchableOpacity>
+  </View>
+);
 
-      {/* Όνομα/τίτλος υπηρεσίας */}
-      <Text style={styles.serviceTitle}>{service.name}</Text>
-
-      <Text style={styles.serviceDescription}>{service.description}</Text>
-
-      <TouchableOpacity style={styles.selectButton} onPress={onSelect}>
-        <Text style={styles.selectButtonText}>Επιλογή</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
-
-export type AddressData = {
-  id: number;
-  title: string; // Η διεύθυνση ως κείμενο
-  description: string;
-  address: string;
-};
-
-// 1) Νέα τύπη για CarWash
-type CarWash = {
-  _id: string;
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  zip_code: string;
-  phone_number: string;
-  working_hours?: string;
-};
-
-// Ορίζουμε τη λίστα διευθύνσεων στο parent
-const addressList: AddressData[] = [
-  {
-    id: 1,
-    title: "Οδός Αριστοτέλους 10, Αθήνα, Ελλάδα",
-    description: "",
-    address: "Οδός Αριστοτέλους 10, Αθήνα, Ελλάδα",
-  },
-  {
-    id: 2,
-    title: "Λεωφόρος Συγγρού 20, Αθήνα, Ελλάδα",
-    description: "",
-    address: "Λεωφόρος Συγγρού 20, Αθήνα, Ελλάδα",
-  },
-  {
-    id: 3,
-    title: "Οδός Πανεπιστημίου 5, Αθήνα, Ελλάδα",
-    description: "",
-    address: "Οδός Πανεπιστημίου 5, Αθήνα, Ελλάδα",
-  },
-  // Προσθέστε όσες διευθύνσεις χρειάζεστε...
-];
-
-type AddressCardProps = {
-  service: any;
-  onSelect: () => void;
-};
-
-const AddressCard: React.FC<AddressCardProps> = ({ service, onSelect }) => {
-  return (
-    <View style={styles.card}>
-      <Text style={styles.title}>{service.title}</Text>
-      <Text style={styles.address}>{service.address}</Text>
-      <Text style={styles.description}>{service.description}</Text>
-      <TouchableOpacity style={styles.button} onPress={onSelect}>
-        <Text style={styles.buttonText}>Επιλογή</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
-
-const MultiStepFormScreen: React.FC = () => {
+// Κυρίως component φόρμας
+const MultiStepFormScreen = () => {
+  // Hooks context
   const { isLoggedIn } = useAuth();
-  const [selectedVehicle, setSelectedVehicle] = useState<number | null>(null);
-  const scrollRef = useRef<ScrollView>(null);
+  const { ip } = useIP();
+
+  // States για κάθε βήμα
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedService, setSelectedService] =
-    useState<SelectedService | null>(null);
+  const [selectedService, setSelectedService] = useState(null);
+  const [schedule, setSchedule] = useState({ date: null, time: null });
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [selectedCarWash, setSelectedCarWash] = useState(null);
+  const [carWashes, setCarWashes] = useState([]);
+  const [services, setServices] = useState([]);
+  const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [loadingVehicleTypes, setLoadingVehicleTypes] = useState(true);
+  const [loadingServices, setLoadingServices] = useState(false);
 
-  const [schedule, setSchedule] = useState<{
-    date: string | null;
-    time: string | null;
-  }>({
-    date: null,
-    time: null,
+  const scrollRef = useRef(null); // Scroll για επιστροφή σε συγκεκριμένα σημεία
+  const insets = useSafeAreaInsets(); // Safe padding top
+
+  // Δημιουργία αντιστοίχισης index → τύπος οχήματος
+  const vehicleTypeMapping = {};
+  vehicleTypes.forEach((type, index) => {
+    vehicleTypeMapping[index + 1] = type;
   });
-  const handleScheduleChange = (date: string | null, time: string | null) => {
-    setSchedule({ date, time });
-  };
 
-  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
-  // + πρόσθετο state
-  const [selectedCarWash, setSelectedCarWash] = useState<CarWash | null>(null);
-
-  const [carWashes, setCarWashes] = useState<CarWash[]>([]);
-  const [loadingCarWashes, setLoadingCarWashes] = useState(false);
-
-  const [services, setServices] = useState<ServiceType[]>([]);
-  const [loadingServices, setLoadingServices] = useState(true);
-
+  // 📡 Βήμα 1: Φόρτωση τύπων οχημάτων
   useEffect(() => {
-    fetch("http://10.10.20.47:5000/api/services")
+    fetch(`http://${ip}:5000/api/services/vehicle-types`)
       .then((res) => res.json())
-      .then((data: ServiceType[]) => setServices(data))
-      .catch((err) => console.error("Failed to load services:", err))
-      .finally(() => setLoadingServices(false));
-  }, []);
+      .then((data) => setVehicleTypes(data))
+      .catch((err) => console.error("❌ Error fetching vehicle types:", err))
+      .finally(() => setLoadingVehicleTypes(false));
+  }, [ip]);
 
-  const handleAddressSelect = (address: AddressData) => {
-    setSelectedAddress(address.address);
-    setCurrentStep((prev) => prev + 1);
-  };
-
-  // 3) Μόλις ο user επιλέξει υπηρεσία (δηλ. αλλάξει το selectedService), φέρνουμε τα car washes:
+  // 📡 Βήμα 2: Φόρτωση υπηρεσιών για επιλεγμένο όχημα
   useEffect(() => {
-    if (!selectedService) return;
+    if (!selectedVehicle) return;
+    setLoadingServices(true);
+    const vehicleType = vehicleTypeMapping[selectedVehicle];
+    fetch(`http://${ip}:5000/api/services/by-vehicle/${vehicleType}`)
+      .then((res) => res.json())
+      .then((data) => setServices(data))
+      .catch((err) => console.error("❌ Failed to load services:", err))
+      .finally(() => setLoadingServices(false));
+  }, [selectedVehicle, ip]);
 
-    setLoadingCarWashes(true);
+  // 📡 Βήμα 3: Φόρτωση πλυντηρίων για την υπηρεσία + όχημα
+  useEffect(() => {
+    if (!selectedService || !selectedVehicle) return;
+    const vehicleType = vehicleTypeMapping[selectedVehicle];
     fetch(
-      `http://10.10.20.47:5000/api/carwashes?service_id=${selectedService.service_id}`
+      `http://${ip}:5000/api/carwashes?service_name=${encodeURIComponent(
+        selectedService.title
+      )}&vehicle_type=${encodeURIComponent(vehicleType)}`
     )
       .then((res) => res.json())
-      .then((data: CarWash[]) => setCarWashes(data))
-      .catch((err) => console.error("Failed to load car washes:", err))
-      .finally(() => setLoadingCarWashes(false));
-  }, [selectedService]);
+      .then((data) => setCarWashes(data))
+      .catch((err) => console.error("❌ Failed to load car washes:", err));
+  }, [selectedService, selectedVehicle, ip]);
 
-  const carwashAddresses: AddressData[] = carWashes.map((cw, idx) => ({
-    id: idx,
-    title: cw.name,
-    description: cw.address,
-    address: cw.address, // εδώ πάει ολόκληρη η διεύθυνση
-  }));
-  // Παίρνουμε τα markers μέσω του custom hook (η λίστα διευθύνσεων είναι lifted εδώ)
-  const markers: MarkerType[] = useGeocodeAddresses(carwashAddresses);
+  // 📍 Γεωκωδικοποίηση διευθύνσεων πλυντηρίων για τον χάρτη
+  const carwashAddresses = useMemo(() => {
+    return carWashes.map((cw, idx) => ({
+      id: idx,
+      title: cw.name,
+      address: cw.address,
+      description: cw.address,
+    }));
+  }, [carWashes]);
 
-  // Όταν επιλέγεται μία κάρτα τύπου οχήματος
-  const handleVehicleSelect = (id: number) => {
+  const markers = useGeocodeAddresses(carwashAddresses); // Προετοιμασία markers για χάρτη
+
+  // 🔁 Επιλογή οχήματος (επαναφορά κατάστασης)
+  const handleVehicleSelect = (id) => {
     setSelectedVehicle(id);
-    // Μετά από μικρή καθυστέρηση, μετακινούμε το scroll στον container των υπηρεσιών.
+    setSelectedService(null);
+    setSelectedAddress(null);
+    setSelectedCarWash(null);
+    setSchedule({ date: null, time: null });
+    setCurrentStep(1);
     setTimeout(() => {
-      scrollRef.current?.scrollTo({
-        y: 300, // Εδώ μπορείς να ρυθμίσεις την τιμή ώστε να φτάνει ακριβώς στην αρχή του container των υπηρεσιών.
-        animated: true,
-      });
+      scrollRef.current?.scrollTo({ y: 300, animated: true });
     }, 300);
   };
 
-  const handleOnSelect = () => {
-    setCurrentStep(currentStep + 1);
-  };
-  const handleServiceSelect = (svc: {
-    service_id: string;
-    car_wash_id: string;
-    title: string;
-    price: string;
-  }) => {
+  // Επιλογή υπηρεσίας → επόμενο βήμα
+  const handleServiceSelect = (svc) => {
     setSelectedService(svc);
     setCurrentStep((prev) => prev + 1);
   };
 
-  const insets = useSafeAreaInsets();
+  // ⬅️ Πίσω σε προηγούμενο βήμα
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      if (currentStep === 2) setSelectedService(null);
+      else if (currentStep === 3) {
+        setSelectedAddress(null);
+        setSelectedCarWash(null);
+      } else if (currentStep === 4) {
+        setSchedule({ date: null, time: null });
+      }
+    }
+  };
 
+  // 🧩 Return component
   return (
     <SafeAreaView style={[styles.safeContainer, { paddingTop: insets.top }]}>
-      <View style={styles.container}>
-        {/* Progress Indicator */}
-        <View style={styles.progressContainer}>
-          {Array.from({ length: 4 }, (_, index) => {
-            const step = index + 1;
-            const isActive = step === currentStep;
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
+
+        {/* 👣 Ενδείξεις Βημάτων */}
+        <View style={styles.stepIndicatorContainer}>
+          {["Υπηρεσία", "Πλυντήριο", "Ημερομηνία", "Κράτηση"].map((label, index) => {
+            const stepIndex = index + 1;
+            const isActive = currentStep === stepIndex;
+            const isCompleted = currentStep > stepIndex;
+
             return (
-              <View key={step} style={styles.progressItem}>
-                <View style={[styles.circle, isActive && styles.activeCircle]}>
-                  <Text
-                    style={[
-                      styles.stepNumber,
-                      isActive && styles.activeStepNumber,
-                    ]}
-                  >
-                    {step.toString().padStart(2, "0")}
-                  </Text>
-                </View>
-                <Text
-                  style={[styles.stepText, isActive && styles.activeStepText]}
+              <React.Fragment key={index}>
+                <TouchableOpacity
+                  style={styles.stepItem}
+                  disabled={stepIndex >= currentStep}
+                  onPress={() => setCurrentStep(stepIndex)}
                 >
-                  Βήμα {step}
-                </Text>
-                {step < 4 && (
-                  <View
-                    style={[
-                      styles.divider,
-                      step < currentStep && styles.activeDivider,
-                    ]}
-                  />
-                )}
-              </View>
+                  <View style={[
+                    styles.stepCircle,
+                    isCompleted && styles.completedStep,
+                    isActive && styles.activeStep,
+                  ]}>
+                    <Text style={styles.stepText}>{stepIndex}</Text>
+                  </View>
+                  <Text style={[
+                    styles.stepLabel,
+                    isCompleted && styles.completedLabel,
+                    isActive && styles.activeLabel,
+                  ]}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+                {index < 3 && <View style={styles.stepLine} />}
+              </React.Fragment>
             );
           })}
         </View>
-      </View>
-      {currentStep === 1 && (
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
-          {/* Ενότητα για επιλογή τύπου οχήματος */}
-          <Text style={styles.sectionHeader}>Επιλογή τύπου οχήματος</Text>
-          <View style={styles.vehicleCardsContainer}>
-            {vehicleTypes.map((vehicle) => (
-              <TouchableOpacity
-                key={vehicle.id}
-                style={styles.vehicleCard}
-                onPress={() => handleVehicleSelect(vehicle.id)}
-              >
-                <Image
-                  source={vehicle.image}
-                  style={styles.vehicleImage}
-                  resizeMode="cover"
-                />
-                <Text style={styles.vehicleLabel}>{vehicle.label}</Text>
-              </TouchableOpacity>
+
+        {/* 🧾 Βήμα 1: Επιλογή οχήματος + υπηρεσίας */}
+        {currentStep === 1 && (
+          <>
+            <Text style={styles.sectionHeader}>Επιλογή τύπου οχήματος</Text>
+            {loadingVehicleTypes ? (
+              <Text>Φορτώνω τύπους οχήματος…</Text>
+            ) : (
+              <View style={styles.vehicleCardsContainer}>
+                {vehicleTypes.map((vehicleType, idx) => (
+                  <TouchableOpacity
+                    key={vehicleType}
+                    style={styles.vehicleCard}
+                    onPress={() => handleVehicleSelect(idx + 1)}
+                  >
+                    <Image
+                      source={vehicleImageMap[vehicleType]}
+                      style={styles.vehicleImage}
+                    />
+                    <Text style={styles.vehicleLabel}>{vehicleType}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {selectedVehicle && (
+              <View style={styles.servicesContainer}>
+                <Text style={styles.servicesHeader}>Δείτε τις Υπηρεσίες</Text>
+                {loadingServices ? (
+                  <Text>Φορτώνω υπηρεσίες…</Text>
+                ) : (
+                  services.map((service) => (
+                    <ServiceCard
+                      key={service._id}
+                      service={service}
+                      onSelect={() =>
+                        handleServiceSelect({
+                          service_id: service._id,
+                          car_wash_id: service.car_wash_id,
+                          title: service.name,
+                          price: service.price.toString(),
+                        })
+                      }
+                    />
+                  ))
+                )}
+              </View>
+            )}
+          </>
+        )}
+
+        {/* 🧼 Βήμα 2: Επιλογή πλυντηρίου + Χάρτης */}
+        {currentStep === 2 && (
+          <>
+            <Text style={styles.sectionHeader}>Επιλέξτε πλυντήριο</Text>
+            <MapComponent markers={markers} />
+            {carWashes.map((cw) => (
+              <AddressCard
+                key={cw._id}
+                service={{
+                  title: cw.name,
+                  address: cw.address,
+                  description: cw.name,
+                }}
+                onSelect={() => {
+                  setSelectedAddress(cw.address);
+                  setSelectedCarWash(cw);
+                  setCurrentStep(3);
+                }}
+              />
             ))}
-          </View>
+          </>
+        )}
 
-          {/* Εμφάνιση container υπηρεσιών όταν έχει επιλεγεί κατηγορία */}
-          {selectedVehicle && (
-            <View style={styles.servicesContainer}>
-              <Text style={styles.servicesHeader}>Δείτε τις Υπηρεσίες</Text>
-              {loadingServices ? (
-                <Text>Φορτώνω υπηρεσίες…</Text>
-              ) : (
-                services.map((service) => (
-                  <ServiceCard
-                    key={service._id}
-                    service={service}
-                    onSelect={() =>
-                      handleServiceSelect({
-                        service_id: service._id,
-                        car_wash_id: service.car_wash_id,
-                        title: service.name,
-                        price: service.price.toString(),
-                      })
-                    }
-                  />
-                ))
-              )}
-            </View>
-          )}
-        </ScrollView>
-      )}
-      {/* Περιεχόμενο για το βήμα 2: Χάρτης */}
-      {currentStep === 2 && (
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
-          <Text style={styles.sectionHeader}>Επιλέξτε πλυντήριο</Text>
-
-          {loadingCarWashes ? (
-            <Text>Φορτώνω πλησιέστερα πλυντήρια…</Text>
-          ) : (
-            <>
-              {/* 1) Ο χάρτης με markers */}
-              <MapComponent markers={markers} />
-
-              {/* 2) Οι κάρτες με τα πλυντήρια */}
-              {carWashes.map((cw) => (
-                <AddressCard
-                  key={cw._id}
-                  service={{
-                    title: cw.name,
-                    address: cw.address,
-                    description: cw.name, // ή ό,τι άλλο θες εδώ
-                  }}
-                  onSelect={() => {
-                    setSelectedAddress(cw.address);
-                    setSelectedCarWash(cw);
-                    setCurrentStep(3);
-                  }}
-                />
-              ))}
-            </>
-          )}
-        </ScrollView>
-      )}
-
-      {currentStep === 3 && (
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
+        {/* 🕒 Βήμα 3: Επιλογή Ημερομηνίας/Ώρας */}
+        {currentStep === 3 && (
           <Step3Schedule
-            onNextStep={handleOnSelect}
-            onScheduleChange={handleScheduleChange}
+            onNextStep={() => setCurrentStep(4)}
+            onScheduleChange={(date, time) => setSchedule({ date, time })}
+            selectedCarWashId={selectedCarWash?._id || null}
+            ip={ip}
           />
-        </ScrollView>
-      )}
-      {currentStep === 4 && (
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.container}>
+        )}
+
+        {/* 📋 Βήμα 4: Σύνοψη κράτησης */}
+        {currentStep === 4 && (
           <SummaryComponent
             autoSaveOnMount={isLoggedIn}
-            vehicle={vehicleTypes.find((v) => v.id === selectedVehicle) || null}
-            service={selectedService} // selectedService είναι ένα state που θα έχεις αποθηκεύσει στο step 2
-            schedule={schedule} // selectedSchedule είναι ένα state με { date, time } από το step 3
+            vehicle={vehicleTypes[selectedVehicle - 1] || null}
+            service={selectedService}
+            schedule={schedule}
             address={selectedAddress}
             carWash={selectedCarWash}
           />
-        </ScrollView>
-      )}
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
+// styles are unchanged...
 const styles = StyleSheet.create({
-  mapContainer: {
-    marginTop: 30,
-    alignItems: "center",
-  },
-  addressCardsContainer: {
-    marginTop: 20,
-  },
-  nextButton: {
-    backgroundColor: "#00ADFE",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  nextButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  safeContainer: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  container: {
-    padding: 20,
-    backgroundColor: "#fff",
-  },
+  safeContainer: { flex: 1, backgroundColor: "#fff" },
+  container: { padding: 20 },
   sectionHeader: {
     fontSize: 22,
     fontWeight: "bold",
@@ -463,168 +313,126 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#333",
   },
-  progressContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-    justifyContent: "center",
-  },
-  progressItem: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  circle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: "#ccc",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  activeCircle: {
-    borderColor: "#00ADFE",
-    backgroundColor: "#00ADFE",
-  },
-  stepNumber: {
-    color: "#ccc",
-    fontWeight: "bold",
-  },
-  activeStepNumber: {
-    color: "#fff",
-  },
-  stepText: {
-    marginLeft: 5,
-    fontSize: 12,
-    color: "#ccc",
-  },
-  activeStepText: {
-    color: "#00ADFE",
-  },
-  divider: {
-    width: 20,
-    height: 2,
-    backgroundColor: "#ccc",
-    marginHorizontal: 5,
-  },
-  activeDivider: {
-    backgroundColor: "#00ADFE",
-  },
   vehicleCardsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
   },
-  vehicleCard: {
-    width: "48%",
-    backgroundColor: "#e0e0e0",
-    borderRadius: 8,
-    marginBottom: 15,
-    alignItems: "center",
-    padding: 10,
-  },
-  vehicleImage: {
-    width: "100%",
-    height: 100,
-    borderRadius: 8,
-  },
-  vehicleLabel: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  servicesContainer: {
-    marginTop: 30,
-  },
+
+vehicleCard: {
+  width: 130, 
+  height: 110, 
+  margin: 10,
+  borderRadius: 12,
+  backgroundColor: "#eee",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 12,
+  elevation: 2,
+},
+vehicleImage: {
+  marginTop: 0,
+  width: 130, 
+  height: 90, 
+  borderRadius: 10, 
+  resizeMode: "contain",
+},
+vehicleLabel: {
+  marginTop: 3,
+  fontSize: 12, 
+  textAlign: "center",
+  fontWeight: "600",
+},
+
+  servicesContainer: { marginTop: 20 },
   servicesHeader: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
-    color: "#333",
-  },
-  serviceCard: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  servicePrice: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  serviceSubPrice: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 5,
-  },
-  serviceTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 5,
-  },
-  serviceDescription: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 10,
-  },
-  selectButton: {
-    backgroundColor: "#00ADFE",
-    paddingVertical: 10,
-    borderRadius: 6,
-    alignItems: "center",
-  },
-  selectButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  card: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  title: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
-    marginBottom: 5,
-  },
-  address: {
-    fontSize: 16,
-    color: "#555",
-    marginBottom: 5,
-  },
-  description: {
-    fontSize: 14,
-    color: "#777",
     marginBottom: 10,
+    textAlign: "center",
   },
-  button: {
+  serviceCard: {
+    backgroundColor: "#f9f9f9",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  serviceTitle: { fontSize: 18, fontWeight: "bold" },
+  serviceDescription: { marginTop: 5, fontSize: 14, color: "#666" },
+  servicePrice: { fontSize: 16, fontWeight: "bold", color: "#00ADFE" },
+  selectButton: {
     backgroundColor: "#00ADFE",
-    paddingVertical: 10,
+    marginTop: 10,
+    paddingVertical: 8,
     borderRadius: 6,
-    alignItems: "center",
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+  selectButtonText: { color: "#fff", textAlign: "center" },
+  card: {
+    padding: 15,
+    backgroundColor: "#f0f0f0",
+    marginVertical: 10,
+    borderRadius: 8,
   },
+  title: { fontSize: 18, fontWeight: "bold" },
+  address: { fontSize: 14, color: "#444" },
+  description: { fontSize: 12, color: "#777" },
+  button: {
+    marginTop: 10,
+    backgroundColor: "#00ADFE",
+    padding: 10,
+    borderRadius: 5,
+  },
+  buttonText: { color: "#fff", textAlign: "center" },
+
+stepIndicatorContainer: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginBottom: 30,
+  flexWrap: "nowrap",
+},
+stepItem: {
+  alignItems: "center",
+  width: 70,
+},
+stepCircle: {
+  width: 30,
+  height: 30,
+  borderRadius: 15,
+  backgroundColor: "#ccc",
+  justifyContent: "center",
+  alignItems: "center",
+},
+stepText: {
+  color: "#fff",
+  fontWeight: "bold",
+},
+stepLabel: {
+  fontSize: 10,
+  textAlign: "center",
+  marginTop: 4,
+  color: "#999",
+},
+activeStep: {
+  backgroundColor: "#00ADFE",
+},
+completedStep: {
+  backgroundColor: "#00C851",
+},
+activeLabel: {
+  color: "#00ADFE",
+  fontWeight: "bold",
+},
+completedLabel: {
+  color: "#00C851",
+},
+stepLine: {
+  height: 2,
+  backgroundColor: "#ccc",
+  flex: 1,
+  marginHorizontal: 4,
+},
+
 });
 
 export default MultiStepFormScreen;

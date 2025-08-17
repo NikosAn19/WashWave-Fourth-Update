@@ -14,6 +14,7 @@ import {
 import { ToastAndroid } from "react-native";
 import { RelativePathString, useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
+import { useIP } from "@/context/IPContext";
 
 interface RegisterModalProps {
   visible: boolean;
@@ -29,7 +30,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
   const router = useRouter();
 
   // ---- κοινά ----
-  const [step, setStep] = useState<1|2>(1);
+  const [step, setStep] = useState<1 | 2>(1);
 
   // ---- βήμα 1: εγγραφή ----
   const [email, setEmail] = useState("");
@@ -44,14 +45,16 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
 
   // ---- βήμα 2: επαλήθευση ----
   const [code, setCode] = useState("");
-  const [devCode, setDevCode] = useState<string|undefined>(undefined);
+  const [devCode, setDevCode] = useState<string | undefined>(undefined);
   const { login } = useAuth();
+  const { ip } = useIP();
 
   // Αν έχεις στον server επιστροφή του κωδικού (μόνο για dev), τον αποθηκεύεις
   const handleRegister = async () => {
     try {
       const payload = {
-        email,password,
+        email,
+        password,
         phone_number: phone,
         last_name: lastName,
         first_name: firstName,
@@ -62,26 +65,26 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
       };
       const res = await fetch("http://10.10.20.47:5000/api/auth/register", {
         method: "POST",
-        headers: { "Content-Type":"application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
-        return Alert.alert("Σφάλμα εγγραφής", data.message||"Κάτι πήγε στραβά");
+        return Alert.alert(
+          "Σφάλμα εγγραφής",
+          data.message || "Κάτι πήγε στραβά"
+        );
       }
       // επιτυχία
-      setDevCode(data.verification_code);  // αν σου το στέλνει ο server
+      setDevCode(data.verification_code); // αν σου το στέλνει ο server
       setStep(2);
       // toast / alert με τον κωδικό (μόνο dev)
-      if (Platform.OS==="android" && data.verification_code) {
-        ToastAndroid.show(
-          `Code: ${data.verification_code}`,
-          ToastAndroid.LONG
-        );
+      if (Platform.OS === "android" && data.verification_code) {
+        ToastAndroid.show(`Code: ${data.verification_code}`, ToastAndroid.LONG);
       } else if (data.verification_code) {
         Alert.alert("Verification code", data.verification_code);
       }
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       Alert.alert("Σφάλμα", "Σφάλμα δικτύου");
     }
@@ -89,28 +92,31 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
 
   const handleVerify = async () => {
     try {
-      const res = await fetch("http://10.10.20.47:5000/api/auth/verify", {
+      const res = await fetch(`http://${ip}:5000/api/auth/verify`, {
         method: "POST",
-        headers:{ "Content-Type":"application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, verification_code: code }),
       });
       const data = await res.json();
       if (!res.ok) {
-        return Alert.alert("Σφάλμα επαλήθευσης", data.message||"Λάθος κωδικός");
+        return Alert.alert(
+          "Σφάλμα επαλήθευσης",
+          data.message || "Λάθος κωδικός"
+        );
       }
       login(data.user);
       // επιτυχής επαλήθευση
       Alert.alert("Επιτυχία", "Το email επαληθεύθηκε!", [
-        { text:"OK", onPress: onSuccess }
+        { text: "OK", onPress: onSuccess },
       ]);
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       Alert.alert("Σφάλμα", "Σφάλμα δικτύου");
     }
   };
 
   const onBack = () => {
-    if (step===2) {
+    if (step === 2) {
       setStep(1);
     } else {
       onClose();
@@ -126,10 +132,10 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
     >
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS==="ios"?"padding":undefined}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.modalContainer}>
-          {step===1 ? (
+          {step === 1 ? (
             <>
               <Text style={styles.title}>Εγγραφή</Text>
               <TextInput
@@ -194,13 +200,13 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
               />
               <View style={styles.buttonsRow}>
                 <TouchableOpacity
-                  style={[styles.button,styles.cancelButton]}
+                  style={[styles.button, styles.cancelButton]}
                   onPress={onBack}
                 >
                   <Text style={styles.buttonText}>Άκυρο</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.button,styles.submitButton]}
+                  style={[styles.button, styles.submitButton]}
                   onPress={handleRegister}
                 >
                   <Text style={styles.buttonText}>Επόμενο</Text>
@@ -212,7 +218,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
               <Text style={styles.title}>Επαλήθευση Email</Text>
               <Text style={styles.subheader}>
                 Πληκτρολογήστε τον 6ψήφιο κωδικό στο
-                <Text style={{fontWeight:"bold"}}> {email}</Text>
+                <Text style={{ fontWeight: "bold" }}> {email}</Text>
               </Text>
               <TextInput
                 style={styles.input}
@@ -223,13 +229,13 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
               />
               <View style={styles.buttonsRow}>
                 <TouchableOpacity
-                  style={[styles.button,styles.cancelButton]}
+                  style={[styles.button, styles.cancelButton]}
                   onPress={onBack}
                 >
                   <Text style={styles.buttonText}>Πίσω</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.button,styles.submitButton]}
+                  style={[styles.button, styles.submitButton]}
                   onPress={handleVerify}
                 >
                   <Text style={styles.buttonText}>Επαλήθευση</Text>
@@ -284,7 +290,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   button: {
-    flex:1,
+    flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
